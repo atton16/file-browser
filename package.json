@@ -1,0 +1,16 @@
+{
+  "name": "file-browser",
+  "module": "src/index.tsx",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@types/luxon": "^3.6.2",
+    "hono": "^4.7.10",
+    "luxon": "^3.6.1"
+  }
+}
