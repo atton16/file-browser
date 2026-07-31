@@ -24,7 +24,10 @@ dir.get("/", async (c) => {
     parent = "/";
   }
   async function listFolders(q: string) {
-    const myPath = `${BASE_PATH}${q === "/" ? "" : q}`;
+    if (q.lastIndexOf("/") === q.length - 1) {
+      q = q.slice(0, -1);
+    }
+    const myPath = `${BASE_PATH}${q}`;
     try {
       const files = await readdir(myPath, {
         encoding: "utf-8",
