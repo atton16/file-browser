@@ -64,13 +64,13 @@ export const List = async ({
     <form id="my-form">
       <button
         type="button"
-        class="btn btn-outline-secondary"
+        class="btn btn-outline-primary"
         id="copy-selected"
         data-bs-toggle="modal"
         data-bs-target="#copy-modal"
         disabled
       >
-        Copy selected
+        COPY
       </button>
       <div
         class="modal fade"
@@ -83,7 +83,7 @@ export const List = async ({
           <div class="modal-content">
             <div class="modal-header">
               <h1 class="modal-title fs-5" id="copy-modal-label">
-                Copy selected
+                Copy
               </h1>
               <button
                 type="button"
