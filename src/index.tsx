@@ -7,6 +7,11 @@ import { BASE_PATH } from "./constant";
 import { customLogger, customLoggerWithRequestId } from "./customLogger";
 import { copy } from "./api/copy";
 import { dir } from "./api/dir";
+import { mkdirApi } from "./api/mkdir";
+import { renameApi } from "./api/rename";
+import { deleteApi } from "./api/delete";
+import { chmodApi } from "./api/chmod";
+import { chownApi } from "./api/chown";
 import { page } from "./page";
 import { randomUUIDv7 } from "bun";
 
@@ -66,6 +71,11 @@ app.get("/", (c) => c.redirect("/page"));
 app.get("/api", (c) => c.json({ hello: "world" }));
 app.route("/api/copy", copy);
 app.route("/api/dir", dir);
+app.route("/api/mkdir", mkdirApi);
+app.route("/api/rename", renameApi);
+app.route("/api/delete", deleteApi);
+app.route("/api/chmod", chmodApi);
+app.route("/api/chown", chownApi);
 app.route("/page", page);
 app.use("/public/*", serveStatic({ root: `${process.cwd()}/src` }));
 
