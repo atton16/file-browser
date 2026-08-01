@@ -1,4 +1,4 @@
-import { cp, chmod, chown } from "node:fs/promises";
+import { cp, chmod, chown, constants } from "node:fs/promises";
 
 export const createCmds = (): Array<{
   command?: string;
@@ -32,6 +32,7 @@ export const execCmds = async (
           force: false,
           errorOnExist: true,
           preserveTimestamps: true,
+          mode: constants.COPYFILE_FICLONE,
         });
       } catch (error) {
         console.error(error);
