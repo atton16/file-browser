@@ -8,9 +8,9 @@ docker run \
   --network bridge \
   --name file-browser \
   -p 3007:3000 \
-  -e BASE_PATH=/mnt/user \
+  -e BASE_PATH=/mnt/user/media \
   -e MOVIE_BASE_PATH=/mnt/user/media/Movies/Intl \
-  -e TVSHOW_BASE_PATH=/mnt/user/media/Movie Series \
+  -e TVSHOW_BASE_PATH=/mnt/user/media/Movie\ Series \
   -u 0:0 \
   -v /mnt/user:/mnt/user \
   -v /etc/passwd:/etc/passwd:ro \
