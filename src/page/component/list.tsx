@@ -59,8 +59,8 @@ export const List = async ({
       mtime: DateTime.fromMillis(filestat.mtimeMs)
         .setZone("Asia/Bangkok")
         .toFormat("yyyy-MM-dd HH:mm:ss"),
-    });
   }
+  myFiles.sort((a, b) => b.mtimeMs - a.mtimeMs);
   logger("[List] cwd", cwd);
 
   const currentFolderPath = myPath;

@@ -537,7 +537,7 @@ if (deleteModal) {
  * Initialize data table
  */
 new DataTable("#dir", {
-  order: [[1, "asc"]],
+  order: [[5, "desc"]],
   columnDefs: [
     {
       orderable: false,
