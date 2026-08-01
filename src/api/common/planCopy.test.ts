@@ -95,6 +95,11 @@ describe("planCopy with real default base directories", () => {
         sources: [fullPath],
         destination: MOVIE_DIR,
         type: "movie",
+        title: "Project Hail Mary 2026 TH",
+        season: "Season 1",
+        tvshowBaseDir: TVSHOW_DIR,
+        movieBaseDir: MOVIE_DIR,
+        isShowDir: undefined,
       },
     ]);
   });
@@ -114,6 +119,7 @@ describe("planCopy with real default base directories", () => {
         title: "Rick and Morty",
         season: "Season 9",
         tvshowBaseDir: TVSHOW_DIR,
+        movieBaseDir: MOVIE_DIR,
         isShowDir: false,
       },
     ]);
@@ -134,6 +140,7 @@ describe("planCopy with real default base directories", () => {
         title: "Widows Bay",
         season: "Season 1",
         tvshowBaseDir: TVSHOW_DIR,
+        movieBaseDir: MOVIE_DIR,
         isShowDir: false,
       },
     ]);

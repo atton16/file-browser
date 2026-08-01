@@ -182,6 +182,58 @@ if (autoCopyModal) {
     $("#auto-copy-spinner").hide();
   });
 
+  // Delegated event listener for Type dropdown changes
+  $(document).off("change", ".auto-copy-type-select").on("change", ".auto-copy-type-select", function () {
+    const idx = parseInt($(this).attr("data-plan-index"), 10);
+    if (isNaN(idx) || !currentAutoCopyPlans[idx]) return;
+
+    const plan = currentAutoCopyPlans[idx];
+    const newType = $(this).val();
+    plan.type = newType;
+
+    const tvFields = $(`#auto-copy-tv-fields-${idx}`);
+
+    if (newType === "movie") {
+      tvFields.hide();
+      const movieBase = plan.movieBaseDir || (constant.BASE_PATH ? cleanPath(`${constant.BASE_PATH}/media/Movies/Intl`) : "/mnt/user/media/media/Movies/Intl");
+      plan.destination = cleanPath(movieBase);
+      $(`#auto-copy-dest-${idx}`).val(plan.destination);
+    } else if (newType === "tvshow") {
+      tvFields.show();
+      let title = $(`#auto-copy-title-${idx}`).val().trim();
+      let season = $(`#auto-copy-season-${idx}`).val().trim();
+
+      if (!title) {
+        title = plan.title || "Unknown Show";
+        $(`#auto-copy-title-${idx}`).val(title);
+      }
+      if (!season) {
+        season = plan.season || "Season 1";
+        $(`#auto-copy-season-${idx}`).val(season);
+      }
+
+      plan.title = title;
+      plan.season = season;
+
+      let tvBase = plan.tvshowBaseDir || (constant.BASE_PATH ? cleanPath(`${constant.BASE_PATH}/media/Movie Series`) : "/mnt/user/media/media/Movie Series");
+      let newDest = "";
+      if (plan.isShowDir) {
+        newDest = title ? `${tvBase}/${title}` : tvBase;
+      } else {
+        if (title && season) {
+          newDest = `${tvBase}/${title}/${season}`;
+        } else if (title) {
+          newDest = `${tvBase}/${title}`;
+        } else {
+          newDest = tvBase;
+        }
+      }
+      newDest = cleanPath(newDest);
+      plan.destination = newDest;
+      $(`#auto-copy-dest-${idx}`).val(newDest);
+    }
+  });
+
   // Delegated event listener for Title & Season input changes
   $(document).off("input", ".auto-copy-title-input, .auto-copy-season-input").on("input", ".auto-copy-title-input, .auto-copy-season-input", function () {
     const idx = parseInt($(this).attr("data-plan-index"), 10);
@@ -257,6 +309,7 @@ if (autoCopyModal) {
           title: plan.title || "",
           season: plan.season || "",
           tvshowBaseDir: plan.tvshowBaseDir || "",
+          movieBaseDir: plan.movieBaseDir || "",
           isShowDir: !!plan.isShowDir,
         }));
         $("#auto-copy-plan-loading").hide();
@@ -275,16 +328,20 @@ if (autoCopyModal) {
             <div class="card mb-3 border-primary-subtle shadow-sm">
               <div class="card-header bg-light-subtle d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
                 <span class="fw-bold text-primary">
-                  Plan #${idx + 1} ${isTv ? '<span class="badge bg-info text-dark ms-1">TV Show</span>' : '<span class="badge bg-secondary ms-1">Movie</span>'}
+                  Plan #${idx + 1}
                 </span>
                 <span class="badge bg-primary rounded-pill">${plan.sources.length} item(s)</span>
               </div>
               <div class="card-body p-3">
-          `;
+                <div class="mb-3">
+                  <label class="form-label form-label-sm fw-semibold mb-1" for="auto-copy-type-${idx}">Detected Type</label>
+                  <select id="auto-copy-type-${idx}" class="form-select form-select-sm auto-copy-type-select" data-plan-index="${idx}">
+                    <option value="tvshow" ${isTv ? "selected" : ""}>TV Show</option>
+                    <option value="movie" ${!isTv ? "selected" : ""}>Movie</option>
+                  </select>
+                </div>
 
-          if (isTv) {
-            html += `
-                <div class="row g-2 mb-3">
+                <div id="auto-copy-tv-fields-${idx}" class="row g-2 mb-3" style="${isTv ? "" : "display: none;"}">
                   <div class="col-12 col-md-7">
                     <label class="form-label form-label-sm fw-semibold mb-1" for="auto-copy-title-${idx}">Title</label>
                     <input
@@ -308,10 +365,7 @@ if (autoCopyModal) {
                     />
                   </div>
                 </div>
-            `;
-          }
 
-          html += `
                 <div class="mb-3">
                   <label class="form-label form-label-sm fw-semibold mb-1" for="auto-copy-dest-${idx}">Destination</label>
                   <input
