@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { BASE_PATH } from "../../constant";
+import { BASE_PATH, MOVIE_BASE_PATH, TVSHOW_BASE_PATH } from "../../constant";
 
 export interface CopyApiCall {
   sources: string[];
@@ -247,9 +247,8 @@ export function planCopySync(
   input: string | string[],
   options?: PlanCopyOptions
 ): CopyApiCall[] {
-  const defaultBase = BASE_PATH;
-  const movieBaseDir = options?.movieDir || `${defaultBase}/media/Movies/Intl`;
-  const tvshowBaseDir = options?.tvshowDir || `${defaultBase}/media/Movie Series`;
+  const movieBaseDir = options?.movieDir || MOVIE_BASE_PATH;
+  const tvshowBaseDir = options?.tvshowDir || TVSHOW_BASE_PATH;
 
   const sourcesList = Array.isArray(input) ? input : [input];
   const destMap = new Map<string, DestMapEntry>();
