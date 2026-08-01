@@ -163,10 +163,28 @@ if (copyModal) {
 /**
  * Auto Copy Modal Setup & Submit
  */
+let autoCopyRedirectTo = null;
+let isAutoCopyLoading = false;
 let currentAutoCopyPlans = [];
 const autoCopyModal = document.getElementById("auto-copy-modal");
 if (autoCopyModal) {
+  autoCopyModal.addEventListener("hide.bs.modal", (e) => {
+    if (autoCopyRedirectTo) {
+      e.preventDefault();
+      window.location.href = autoCopyRedirectTo;
+      return;
+    }
+    if (isAutoCopyLoading) {
+      e.preventDefault();
+      return;
+    }
+    $("#auto-copy-output-content").text("");
+    $("#auto-copy-spinner").hide();
+  });
+
   autoCopyModal.addEventListener("show.bs.modal", function () {
+    autoCopyRedirectTo = null;
+    isAutoCopyLoading = false;
     const selected = getSelectedCheckboxes();
     const sources = selected.map((el) => cleanPath(el.value));
 
@@ -234,6 +252,7 @@ if (autoCopyModal) {
     e.preventDefault();
     if (!currentAutoCopyPlans || currentAutoCopyPlans.length === 0) return;
 
+    isAutoCopyLoading = true;
     $("#auto-copy-confirm-button").prop("disabled", true);
     $("#auto-copy-cancel-button").prop("disabled", true);
     $("#auto-copy-output").show();
@@ -259,6 +278,7 @@ if (autoCopyModal) {
         if (res.cmds) {
           const failedCmd = res.cmds.find((cmd) => cmd.error);
           if (failedCmd) {
+            isAutoCopyLoading = false;
             $("#auto-copy-spinner").hide();
             $("#auto-copy-output-content").append(
               `ERROR: Copy failed for destination ${plan.destination}\n` +
@@ -269,6 +289,7 @@ if (autoCopyModal) {
           }
         }
       } catch (err) {
+        isAutoCopyLoading = false;
         $("#auto-copy-spinner").hide();
         const errJson = err.responseJSON || err.statusText || "Failed";
         $("#auto-copy-output-content").append(
@@ -280,11 +301,27 @@ if (autoCopyModal) {
       }
     }
 
+    isAutoCopyLoading = false;
     $("#auto-copy-spinner").hide();
     $("#auto-copy-output-content").append("Done! All items copied successfully.");
-    setTimeout(function () {
-      window.location.reload();
-    }, 1200);
+
+    if (currentAutoCopyPlans.length > 0 && currentAutoCopyPlans[0].destination) {
+      const destination = currentAutoCopyPlans[0].destination;
+      let destPath = destination;
+      if (destPath.startsWith(constant.BASE_PATH)) {
+        destPath = destPath.slice(constant.BASE_PATH.length);
+      }
+      autoCopyRedirectTo = cleanPath(
+        constant.PATH_PREFIX + (destPath.startsWith("/") ? destPath : "/" + destPath)
+      );
+      setTimeout(function () {
+        window.location.href = autoCopyRedirectTo;
+      }, 1200);
+    } else {
+      setTimeout(function () {
+        window.location.reload();
+      }, 1200);
+    }
   });
 }
 
