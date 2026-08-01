@@ -231,7 +231,7 @@ export function planCopySync(
   input: string | string[],
   options?: PlanCopyOptions
 ): CopyApiCall[] {
-  const defaultBase = process.env.BASE_PATH || BASE_PATH || "/mnt/user/media";
+  const defaultBase = `${BASE_PATH}/media`;
   const movieBaseDir = options?.movieDir || `${defaultBase}/Movies/Intl`;
   const tvshowBaseDir = options?.tvshowDir || `${defaultBase}/Movie Series`;
 
