@@ -6,6 +6,8 @@ import { modeToLinux, modeToOctal } from "../common/mode";
 import { formatBytes } from "../common/format";
 import { getUsername, getGroup } from "../common/lookup";
 
+const normalizePath = (p: string) => p.replace(/\/+/g, "/");
+
 export const List = async ({
   requestId,
   cwd,
@@ -14,7 +16,8 @@ export const List = async ({
   cwd: string;
 }) => {
   const logger = loggerWithRequestId(requestId);
-  const myPath = `${BASE_PATH}${cwd}`;
+  const rawPath = `${BASE_PATH}/${cwd}`;
+  const myPath = normalizePath(rawPath);
   const files = await readdir(myPath, {
     encoding: "utf-8",
     withFileTypes: true,
@@ -36,14 +39,14 @@ export const List = async ({
   }> = [];
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    const filepath = `${myPath}/${file.name}`;
-    const filestat = await stat(`${myPath}/${file.name}`);
+    const filepath = normalizePath(`${myPath}/${file.name}`);
+    const filestat = await stat(filepath);
     const username = await getUsername(filestat.uid);
     const group = await getGroup(filestat.gid);
     myFiles.push({
       name: file.name,
       isDirectory: file.isDirectory(),
-      href: `${PATH_PREFIX}${cwd}/${file.name}`,
+      href: normalizePath(`${PATH_PREFIX}/${cwd}/${file.name}`),
       absolutePath: filepath,
       size: file.isDirectory() ? "" : formatBytes(filestat.size),
       mode: modeToLinux(filestat.mode),
@@ -84,6 +87,16 @@ export const List = async ({
           disabled
         >
           COPY
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          id="auto-copy-selected"
+          data-bs-toggle="modal"
+          data-bs-target="#auto-copy-modal"
+          disabled
+        >
+          ⚡ AUTO COPY
         </button>
         <button
           type="button"
@@ -251,6 +264,63 @@ export const List = async ({
                 </button>
                 <button type="submit" id="copy-button" class="btn btn-primary">
                   Copy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal: Auto Copy */}
+      <div
+        class="modal fade"
+        id="auto-copy-modal"
+        tabindex={-1}
+        aria-labelledby="auto-copy-modal-label"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <form id="auto-copy-form">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5" id="auto-copy-modal-label">
+                  Auto Copy Plan Review
+                </h1>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div class="modal-body">
+                <p class="text-muted small">
+                  Review the automatically identified destination paths for your selected media files/folders before confirming copy.
+                </p>
+                <div class="mb-3" id="auto-copy-plan-loading">
+                  <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                  <span>Analyzing files & generating copy plan...</span>
+                </div>
+                <div class="mb-3" id="auto-copy-plan-container" style="display: none;">
+                  {/* Copy API Call Plans will be rendered here dynamically */}
+                </div>
+                <div class="mb-3" id="auto-copy-output" style="display: none;">
+                  <h6>Status</h6>
+                  <div class="spinner-border text-primary me-2 mb-2" role="status" id="auto-copy-spinner" style="display: none;"></div>
+                  <pre id="auto-copy-output-content" class="bg-light p-2 border rounded text-break"></pre>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                  id="auto-copy-cancel-button"
+                >
+                  Cancel
+                </button>
+                <button type="submit" id="auto-copy-confirm-button" class="btn btn-primary" disabled>
+                  Confirm & Copy
                 </button>
               </div>
             </form>

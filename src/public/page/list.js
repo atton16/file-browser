@@ -4,6 +4,14 @@
 const constant = JSON.parse(document.getElementById("constant").value);
 
 /**
+ * Helper to normalize path slashes
+ */
+function cleanPath(p) {
+  if (!p) return "";
+  return p.replace(/\/+/g, "/");
+}
+
+/**
  * Get selected file/folder checkboxes
  */
 function getSelectedCheckboxes() {
@@ -19,11 +27,23 @@ function controlActionButtons() {
   const selected = getSelectedCheckboxes();
   const count = selected.length;
 
-  document.getElementById("copy-selected").disabled = count === 0;
-  document.getElementById("rename-selected").disabled = count !== 1;
-  document.getElementById("chmod-selected").disabled = count === 0;
-  document.getElementById("chown-selected").disabled = count === 0;
-  document.getElementById("delete-selected").disabled = count === 0;
+  const copySel = document.getElementById("copy-selected");
+  if (copySel) copySel.disabled = count === 0;
+
+  const autoCopySel = document.getElementById("auto-copy-selected");
+  if (autoCopySel) autoCopySel.disabled = count === 0;
+
+  const renameSel = document.getElementById("rename-selected");
+  if (renameSel) renameSel.disabled = count !== 1;
+
+  const chmodSel = document.getElementById("chmod-selected");
+  if (chmodSel) chmodSel.disabled = count === 0;
+
+  const chownSel = document.getElementById("chown-selected");
+  if (chownSel) chownSel.disabled = count === 0;
+
+  const deleteSel = document.getElementById("delete-selected");
+  if (deleteSel) deleteSel.disabled = count === 0;
 }
 
 // Check all / Uncheck all
@@ -55,7 +75,7 @@ function handleInputChange(event) {
     function (data) {
       const dir = data.dir || [];
       document.getElementById("copy-destination-datalist").innerHTML = dir
-        .map((item) => `<option value="${item}" />`)
+        .map((item) => `<option value="${cleanPath(item)}" />`)
         .join("");
     }
   );
@@ -79,7 +99,7 @@ const copyModal = document.getElementById("copy-modal");
 if (copyModal) {
   document.getElementById("copy-selected").addEventListener("click", function () {
     const selected = getSelectedCheckboxes();
-    const sources = selected.map((el) => el.value);
+    const sources = selected.map((el) => cleanPath(el.value));
     document.getElementById("copy-list").innerHTML = sources.join("<br />");
   });
 
@@ -105,8 +125,8 @@ if (copyModal) {
   document.getElementById("my-form").addEventListener("submit", function (e) {
     e.preventDefault();
     const selected = getSelectedCheckboxes();
-    const sources = selected.map((el) => el.value);
-    const destination = document.getElementById("copy-destination").value;
+    const sources = selected.map((el) => cleanPath(el.value));
+    const destination = cleanPath(document.getElementById("copy-destination").value);
     $("#output-content").html("");
     $("#spinner").show();
     isLoading = true;
@@ -127,8 +147,9 @@ if (copyModal) {
           }
         }
         $("#output-content").html("Done");
-        redirectTo =
-          constant.PATH_PREFIX + destination.slice(constant.BASE_PATH.length);
+        redirectTo = cleanPath(
+          constant.PATH_PREFIX + destination.slice(constant.BASE_PATH.length)
+        );
       },
       error: function (e) {
         isLoading = false;
@@ -137,6 +158,147 @@ if (copyModal) {
       },
     });
   });
+}
+
+/**
+ * Auto Copy Modal Setup & Submit
+ */
+let currentAutoCopyPlans = [];
+const autoCopyModal = document.getElementById("auto-copy-modal");
+if (autoCopyModal) {
+  autoCopyModal.addEventListener("show.bs.modal", function () {
+    const selected = getSelectedCheckboxes();
+    const sources = selected.map((el) => cleanPath(el.value));
+
+    $("#auto-copy-plan-container").hide().empty();
+    $("#auto-copy-output").hide();
+    $("#auto-copy-output-content").text("");
+    $("#auto-copy-spinner").hide();
+    $("#auto-copy-plan-loading").show();
+    $("#auto-copy-confirm-button").prop("disabled", true);
+
+    $.ajax({
+      url: "/api/copy/plan",
+      type: "POST",
+      data: JSON.stringify({ sources }),
+      contentType: "application/json",
+      success: function (data) {
+        currentAutoCopyPlans = (data.plans || []).map((plan) => ({
+          destination: cleanPath(plan.destination),
+          sources: (plan.sources || []).map((s) => cleanPath(s)),
+        }));
+        $("#auto-copy-plan-loading").hide();
+
+        if (currentAutoCopyPlans.length === 0) {
+          $("#auto-copy-plan-container")
+            .html('<div class="alert alert-warning">No copy plans generated.</div>')
+            .show();
+          return;
+        }
+
+        let html = "";
+        currentAutoCopyPlans.forEach((plan) => {
+          html += `
+            <div class="card mb-3 border-primary-subtle shadow-sm">
+              <div class="card-header bg-light-subtle d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="fw-bold text-primary text-break" style="word-break: break-all;">Destination: ${escapeHtml(plan.destination)}</span>
+                <span class="badge bg-primary rounded-pill">${plan.sources.length} item(s)</span>
+              </div>
+              <div class="card-body p-2">
+                <ul class="list-group list-group-flush font-monospace small">
+                  ${plan.sources
+                    .map(
+                      (src) =>
+                        `<li class="list-group-item py-1 text-break" style="word-break: break-all;" title="${escapeHtml(src)}">${escapeHtml(src)}</li>`
+                    )
+                    .join("")}
+                </ul>
+              </div>
+            </div>
+          `;
+        });
+
+        $("#auto-copy-plan-container").html(html).show();
+        $("#auto-copy-confirm-button").prop("disabled", false);
+      },
+      error: function (xhr) {
+        $("#auto-copy-plan-loading").hide();
+        const errText = xhr.responseJSON ? xhr.responseJSON.error : "Failed to generate copy plan";
+        $("#auto-copy-output-content").text(errText);
+        $("#auto-copy-output").show();
+      },
+    });
+  });
+
+  document.getElementById("auto-copy-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    if (!currentAutoCopyPlans || currentAutoCopyPlans.length === 0) return;
+
+    $("#auto-copy-confirm-button").prop("disabled", true);
+    $("#auto-copy-cancel-button").prop("disabled", true);
+    $("#auto-copy-output").show();
+    $("#auto-copy-spinner").show();
+    $("#auto-copy-output-content").text("Starting copy process...\n");
+
+    for (let i = 0; i < currentAutoCopyPlans.length; i++) {
+      const plan = currentAutoCopyPlans[i];
+      const stepMsg = `[${i + 1}/${currentAutoCopyPlans.length}] Copying to ${plan.destination}...\n`;
+      $("#auto-copy-output-content").append(stepMsg);
+
+      try {
+        const res = await $.ajax({
+          url: "/api/copy",
+          type: "POST",
+          data: JSON.stringify({
+            sources: plan.sources,
+            destination: plan.destination,
+          }),
+          contentType: "application/json",
+        });
+
+        if (res.cmds) {
+          const failedCmd = res.cmds.find((cmd) => cmd.error);
+          if (failedCmd) {
+            $("#auto-copy-spinner").hide();
+            $("#auto-copy-output-content").append(
+              `ERROR: Copy failed for destination ${plan.destination}\n` +
+                JSON.stringify(failedCmd.error, null, 2)
+            );
+            $("#auto-copy-cancel-button").prop("disabled", false);
+            return;
+          }
+        }
+      } catch (err) {
+        $("#auto-copy-spinner").hide();
+        const errJson = err.responseJSON || err.statusText || "Failed";
+        $("#auto-copy-output-content").append(
+          `ERROR: Failed to execute copy to ${plan.destination}\n` +
+            JSON.stringify(errJson, null, 2)
+        );
+        $("#auto-copy-cancel-button").prop("disabled", false);
+        return;
+      }
+    }
+
+    $("#auto-copy-spinner").hide();
+    $("#auto-copy-output-content").append("Done! All items copied successfully.");
+    setTimeout(function () {
+      window.location.reload();
+    }, 1200);
+  });
+}
+
+/**
+ * Helper to escape HTML characters
+ */
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 /**
@@ -154,7 +316,8 @@ if (mkdirModal) {
     e.preventDefault();
     const folderName = $("#mkdir-name").val().trim();
     const cwd = $("#mkdir-cwd").val();
-    const path = cwd.endsWith("/") ? cwd + folderName : cwd + "/" + folderName;
+    const rawPath = cwd.endsWith("/") ? cwd + folderName : cwd + "/" + folderName;
+    const path = cleanPath(rawPath);
 
     $.ajax({
       url: "/api/mkdir",
@@ -182,7 +345,7 @@ if (renameModal) {
     const selected = getSelectedCheckboxes();
     if (selected.length === 1) {
       const el = selected[0];
-      const oldPath = el.value;
+      const oldPath = cleanPath(el.value);
       const oldName = el.dataset.name;
       $("#rename-old-path").val(oldPath);
       $("#rename-old-name").val(oldName);
@@ -194,10 +357,11 @@ if (renameModal) {
 
   document.getElementById("rename-form").addEventListener("submit", function (e) {
     e.preventDefault();
-    const oldPath = $("#rename-old-path").val();
+    const oldPath = cleanPath($("#rename-old-path").val());
     const newName = $("#rename-new-name").val().trim();
     const parentPath = oldPath.substring(0, oldPath.lastIndexOf("/"));
-    const newPath = (parentPath === "" ? "" : parentPath) + "/" + newName;
+    const rawPath = (parentPath === "" ? "" : parentPath) + "/" + newName;
+    const newPath = cleanPath(rawPath);
 
     $.ajax({
       url: "/api/rename",
@@ -223,7 +387,7 @@ const chmodModal = document.getElementById("chmod-modal");
 if (chmodModal) {
   chmodModal.addEventListener("show.bs.modal", () => {
     const selected = getSelectedCheckboxes();
-    const paths = selected.map((el) => el.value);
+    const paths = selected.map((el) => cleanPath(el.value));
     $("#chmod-list").html(paths.join("<br />"));
     if (selected.length > 0) {
       $("#chmod-mode").val(selected[0].dataset.mode || "755");
@@ -235,7 +399,7 @@ if (chmodModal) {
   document.getElementById("chmod-form").addEventListener("submit", function (e) {
     e.preventDefault();
     const selected = getSelectedCheckboxes();
-    const paths = selected.map((el) => el.value);
+    const paths = selected.map((el) => cleanPath(el.value));
     const mode = $("#chmod-mode").val().trim();
 
     $.ajax({
@@ -262,7 +426,7 @@ const chownModal = document.getElementById("chown-modal");
 if (chownModal) {
   chownModal.addEventListener("show.bs.modal", () => {
     const selected = getSelectedCheckboxes();
-    const paths = selected.map((el) => el.value);
+    const paths = selected.map((el) => cleanPath(el.value));
     $("#chown-list").html(paths.join("<br />"));
     if (selected.length > 0) {
       const el = selected[0];
@@ -276,7 +440,7 @@ if (chownModal) {
   document.getElementById("chown-form").addEventListener("submit", function (e) {
     e.preventDefault();
     const selected = getSelectedCheckboxes();
-    const paths = selected.map((el) => el.value);
+    const paths = selected.map((el) => cleanPath(el.value));
     const user = $("#chown-user").val().trim();
     const group = $("#chown-group").val().trim();
 
@@ -304,7 +468,7 @@ const deleteModal = document.getElementById("delete-modal");
 if (deleteModal) {
   deleteModal.addEventListener("show.bs.modal", () => {
     const selected = getSelectedCheckboxes();
-    const paths = selected.map((el) => el.value);
+    const paths = selected.map((el) => cleanPath(el.value));
     $("#delete-list").html(paths.join("<br />"));
     $("#delete-output").hide();
     $("#delete-output-content").text("");
@@ -313,7 +477,7 @@ if (deleteModal) {
   document.getElementById("delete-form").addEventListener("submit", function (e) {
     e.preventDefault();
     const selected = getSelectedCheckboxes();
-    const paths = selected.map((el) => el.value);
+    const paths = selected.map((el) => cleanPath(el.value));
 
     $.ajax({
       url: "/api/delete",

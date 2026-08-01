@@ -1,0 +1,24 @@
+Response: {
+    "sources": [
+        "/mnt/user/media/downloads/complete/Project.Hail.Mary.2026.1080p.WEB-DL.TH.DDP5.1.Atmos.H.264-LOL-.mkv"
+    ],
+    "destination": "/mnt/user/media/Movies/Intl",
+    "cmds": [
+        {
+            "command": "cp",
+            "source": "/mnt/user/media/downloads/complete/Project.Hail.Mary.2026.1080p.WEB-DL.TH.DDP5.1.Atmos.H.264-LOL-.mkv",
+            "destination": "/mnt/user/media/Movies/Intl/Project.Hail.Mary.2026.1080p.WEB-DL.TH.DDP5.1.Atmos.H.264-LOL-.mkv"
+        },
+        {
+            "command": "chmod",
+            "path": "/mnt/user/media/Movies/Intl/Project.Hail.Mary.2026.1080p.WEB-DL.TH.DDP5.1.Atmos.H.264-LOL-.mkv",
+            "mode": 33204
+        },
+        {
+            "command": "chown",
+            "path": "/mnt/user/media/Movies/Intl/Project.Hail.Mary.2026.1080p.WEB-DL.TH.DDP5.1.Atmos.H.264-LOL-.mkv",
+            "uid": 99,
+            "gid": 100
+        }
+    ]
+}

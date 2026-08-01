@@ -1,0 +1,24 @@
+Response: {
+    "sources": [
+        "/mnt/user/media/downloads/complete/Rick.and.Morty.S09.COMPLETE.1080p.AMZN.WEB-DL.H.264-BSB/Rick.and.Morty.S09E10.1080p.AMZN.WEB-DL.DDP5.1.H.264-BSB.mkv"
+    ],
+    "destination": "/mnt/user/media/Movie Series/Rick and Morty/Season 9",
+    "cmds": [
+        {
+            "command": "cp",
+            "source": "/mnt/user/media/downloads/complete/Rick.and.Morty.S09.COMPLETE.1080p.AMZN.WEB-DL.H.264-BSB/Rick.and.Morty.S09E10.1080p.AMZN.WEB-DL.DDP5.1.H.264-BSB.mkv",
+            "destination": "/mnt/user/media/Movie Series/Rick and Morty/Season 9/Rick.and.Morty.S09E10.1080p.AMZN.WEB-DL.DDP5.1.H.264-BSB.mkv"
+        },
+        {
+            "command": "chmod",
+            "path": "/mnt/user/media/Movie Series/Rick and Morty/Season 9/Rick.and.Morty.S09E10.1080p.AMZN.WEB-DL.DDP5.1.H.264-BSB.mkv",
+            "mode": 33204
+        },
+        {
+            "command": "chown",
+            "path": "/mnt/user/media/Movie Series/Rick and Morty/Season 9/Rick.and.Morty.S09E10.1080p.AMZN.WEB-DL.DDP5.1.H.264-BSB.mkv",
+            "uid": 99,
+            "gid": 100
+        }
+    ]
+}

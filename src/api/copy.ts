@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { stat, cp, chmod, chown } from "node:fs/promises";
+import { stat, cp, chmod, chown, mkdir } from "node:fs/promises";
 import {
   createCmds,
   execCmds,
@@ -15,6 +15,14 @@ copy.post("/", async (c) => {
   const json = await c.req.json();
   logger(json);
   const { sources, destination } = json;
+
+  // Ensure destination directory exists
+  try {
+    await mkdir(destination, { recursive: true });
+  } catch (err) {
+    // Ignore if directory already exists
+  }
+
   const cmds = createCmds();
   for (let i = 0; i < sources.length; i++) {
     const source = sources[i];
@@ -24,21 +32,26 @@ copy.post("/", async (c) => {
     const uid = filestat.uid;
     const gid = filestat.gid;
     const mode = filestat.mode;
+
+    const targetPath = filestat.isDirectory()
+      ? destination
+      : `${destination}/${filename}`;
+
     cmds.push(
       createCp({
         source,
-        destination: `${destination}/${filename}`,
+        destination: targetPath,
       }),
     );
     cmds.push(
       createChmod({
-        path: `${destination}/${filename}`,
+        path: targetPath,
         mode,
       }),
     );
     cmds.push(
       createChown({
-        path: `${destination}/${filename}`,
+        path: targetPath,
         uid,
         gid,
       }),
@@ -51,4 +64,13 @@ copy.post("/", async (c) => {
     destination,
     cmds,
   });
+});
+
+copy.post("/plan", async (c) => {
+  const json = await c.req.json();
+  const { input, sources, movieDir, tvshowDir } = json;
+  const targetInput = input || sources;
+  const { planCopy } = await import("./common/planCopy");
+  const plans = await planCopy(targetInput, { movieDir, tvshowDir });
+  return c.json({ plans });
 });
