@@ -4,6 +4,11 @@ import { BASE_PATH } from "../../constant";
 export interface CopyApiCall {
   sources: string[];
   destination: string;
+  type?: "movie" | "tvshow";
+  title?: string;
+  season?: string;
+  tvshowBaseDir?: string;
+  isShowDir?: boolean;
 }
 
 export interface PlanCopyOptions {
@@ -227,6 +232,15 @@ export async function planCopy(
 /**
  * Synchronous version of planCopy.
  */
+interface DestMapEntry {
+  sources: string[];
+  type: "movie" | "tvshow";
+  title?: string;
+  season?: string;
+  tvshowBaseDir?: string;
+  isShowDir?: boolean;
+}
+
 export function planCopySync(
   input: string | string[],
   options?: PlanCopyOptions
@@ -236,17 +250,20 @@ export function planCopySync(
   const tvshowBaseDir = options?.tvshowDir || `${defaultBase}/Movie Series`;
 
   const sourcesList = Array.isArray(input) ? input : [input];
-  const destMap = new Map<string, string[]>();
+  const destMap = new Map<string, DestMapEntry>();
 
   for (const itemPath of sourcesList) {
     const media = identifyMedia(itemPath);
     let destination: string;
+    let title: string | undefined;
+    let season: string | undefined;
+    let isShowDir: boolean | undefined;
 
     if (media.type === "movie") {
       destination = movieBaseDir;
     } else {
-      const title = media.title || "Unknown Show";
-      const season = media.season || "Season 1";
+      title = media.title || "Unknown Show";
+      season = media.season || "Season 1";
 
       const parts = itemPath.split("/").filter(Boolean);
       const lastPart = parts[parts.length - 1] || "";
@@ -256,7 +273,7 @@ export function planCopySync(
           lastPart
         );
 
-      const isShowDir =
+      isShowDir =
         !isMediaFile &&
         !isSeasonDir &&
         cleanTitle(lastPart).toLowerCase() === title.toLowerCase();
@@ -269,14 +286,33 @@ export function planCopySync(
     }
 
     if (!destMap.has(destination)) {
-      destMap.set(destination, []);
+      destMap.set(destination, {
+        sources: [],
+        type: media.type,
+        title: media.type === "tvshow" ? title : undefined,
+        season: media.type === "tvshow" ? season : undefined,
+        tvshowBaseDir: media.type === "tvshow" ? tvshowBaseDir : undefined,
+        isShowDir: media.type === "tvshow" ? isShowDir : undefined,
+      });
     }
-    destMap.get(destination)!.push(itemPath);
+    destMap.get(destination)!.sources.push(itemPath);
   }
 
   const calls: CopyApiCall[] = [];
-  for (const [destination, sources] of destMap.entries()) {
-    calls.push({ sources, destination });
+  for (const [destination, entry] of destMap.entries()) {
+    calls.push({
+      sources: entry.sources,
+      destination,
+      type: entry.type,
+      ...(entry.type === "tvshow"
+        ? {
+          title: entry.title,
+          season: entry.season,
+          tvshowBaseDir: entry.tvshowBaseDir,
+          isShowDir: entry.isShowDir,
+        }
+        : {}),
+    });
   }
 
   return calls;

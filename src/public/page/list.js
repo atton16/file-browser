@@ -182,6 +182,55 @@ if (autoCopyModal) {
     $("#auto-copy-spinner").hide();
   });
 
+  // Delegated event listener for Title & Season input changes
+  $(document).off("input", ".auto-copy-title-input, .auto-copy-season-input").on("input", ".auto-copy-title-input, .auto-copy-season-input", function () {
+    const idx = parseInt($(this).attr("data-plan-index"), 10);
+    if (isNaN(idx) || !currentAutoCopyPlans[idx]) return;
+
+    const plan = currentAutoCopyPlans[idx];
+    const newTitle = $(`#auto-copy-title-${idx}`).val().trim();
+    const newSeason = $(`#auto-copy-season-${idx}`).val().trim();
+
+    plan.title = newTitle;
+    plan.season = newSeason;
+
+    let baseDir = plan.tvshowBaseDir;
+    if (!baseDir && plan.destination) {
+      if (plan.title) {
+        const titleIdx = plan.destination.indexOf("/" + plan.title);
+        if (titleIdx !== -1) {
+          baseDir = plan.destination.substring(0, titleIdx);
+        }
+      }
+    }
+
+    if (baseDir) {
+      let newDest = "";
+      if (plan.isShowDir) {
+        newDest = newTitle ? `${baseDir}/${newTitle}` : baseDir;
+      } else {
+        if (newTitle && newSeason) {
+          newDest = `${baseDir}/${newTitle}/${newSeason}`;
+        } else if (newTitle) {
+          newDest = `${baseDir}/${newTitle}`;
+        } else {
+          newDest = baseDir;
+        }
+      }
+      newDest = cleanPath(newDest);
+      plan.destination = newDest;
+      $(`#auto-copy-dest-${idx}`).val(newDest);
+    }
+  });
+
+  // Delegated event listener for direct Destination input changes
+  $(document).off("input", ".auto-copy-dest-input").on("input", ".auto-copy-dest-input", function () {
+    const idx = parseInt($(this).attr("data-plan-index"), 10);
+    if (isNaN(idx) || !currentAutoCopyPlans[idx]) return;
+
+    currentAutoCopyPlans[idx].destination = cleanPath($(this).val());
+  });
+
   autoCopyModal.addEventListener("show.bs.modal", function () {
     autoCopyRedirectTo = null;
     isAutoCopyLoading = false;
@@ -204,6 +253,11 @@ if (autoCopyModal) {
         currentAutoCopyPlans = (data.plans || []).map((plan) => ({
           destination: cleanPath(plan.destination),
           sources: (plan.sources || []).map((s) => cleanPath(s)),
+          type: plan.type || "movie",
+          title: plan.title || "",
+          season: plan.season || "",
+          tvshowBaseDir: plan.tvshowBaseDir || "",
+          isShowDir: !!plan.isShowDir,
         }));
         $("#auto-copy-plan-loading").hide();
 
@@ -215,22 +269,72 @@ if (autoCopyModal) {
         }
 
         let html = "";
-        currentAutoCopyPlans.forEach((plan) => {
+        currentAutoCopyPlans.forEach((plan, idx) => {
+          const isTv = plan.type === "tvshow";
           html += `
             <div class="card mb-3 border-primary-subtle shadow-sm">
-              <div class="card-header bg-light-subtle d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span class="fw-bold text-primary text-break" style="word-break: break-all;">Destination: ${escapeHtml(plan.destination)}</span>
+              <div class="card-header bg-light-subtle d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+                <span class="fw-bold text-primary">
+                  Plan #${idx + 1} ${isTv ? '<span class="badge bg-info text-dark ms-1">TV Show</span>' : '<span class="badge bg-secondary ms-1">Movie</span>'}
+                </span>
                 <span class="badge bg-primary rounded-pill">${plan.sources.length} item(s)</span>
               </div>
-              <div class="card-body p-2">
-                <ul class="list-group list-group-flush font-monospace small">
-                  ${plan.sources
-                    .map(
-                      (src) =>
-                        `<li class="list-group-item py-1 text-break" style="word-break: break-all;" title="${escapeHtml(src)}">${escapeHtml(src)}</li>`
-                    )
-                    .join("")}
-                </ul>
+              <div class="card-body p-3">
+          `;
+
+          if (isTv) {
+            html += `
+                <div class="row g-2 mb-3">
+                  <div class="col-12 col-md-7">
+                    <label class="form-label form-label-sm fw-semibold mb-1" for="auto-copy-title-${idx}">Title</label>
+                    <input
+                      type="text"
+                      id="auto-copy-title-${idx}"
+                      class="form-control form-control-sm auto-copy-title-input"
+                      data-plan-index="${idx}"
+                      value="${escapeHtml(plan.title)}"
+                      placeholder="TV Show Title"
+                    />
+                  </div>
+                  <div class="col-12 col-md-5">
+                    <label class="form-label form-label-sm fw-semibold mb-1" for="auto-copy-season-${idx}">Season</label>
+                    <input
+                      type="text"
+                      id="auto-copy-season-${idx}"
+                      class="form-control form-control-sm auto-copy-season-input"
+                      data-plan-index="${idx}"
+                      value="${escapeHtml(plan.season)}"
+                      placeholder="Season (e.g. Season 1)"
+                    />
+                  </div>
+                </div>
+            `;
+          }
+
+          html += `
+                <div class="mb-3">
+                  <label class="form-label form-label-sm fw-semibold mb-1" for="auto-copy-dest-${idx}">Destination</label>
+                  <input
+                    type="text"
+                    id="auto-copy-dest-${idx}"
+                    class="form-control form-control-sm font-monospace auto-copy-dest-input"
+                    data-plan-index="${idx}"
+                    value="${escapeHtml(plan.destination)}"
+                    placeholder="/path/to/destination"
+                  />
+                </div>
+
+                <div>
+                  <label class="form-label form-label-sm text-muted mb-1">Sources (${plan.sources.length})</label>
+                  <ul class="list-group list-group-flush font-monospace small border rounded" style="max-height: 120px; overflow-y: auto;">
+                    ${plan.sources
+                      .map(
+                        (src) =>
+                          `<li class="list-group-item py-1 text-break" style="word-break: break-all;" title="${escapeHtml(src)}">${escapeHtml(src)}</li>`
+                      )
+                      .join("")}
+                  </ul>
+                </div>
               </div>
             </div>
           `;
@@ -252,6 +356,16 @@ if (autoCopyModal) {
     e.preventDefault();
     if (!currentAutoCopyPlans || currentAutoCopyPlans.length === 0) return;
 
+    // Collect latest destinations from inputs
+    const finalPlans = currentAutoCopyPlans.map((plan, idx) => {
+      const destInputVal = $(`#auto-copy-dest-${idx}`).val();
+      const destination = destInputVal !== undefined ? cleanPath(destInputVal.trim()) : plan.destination;
+      return {
+        sources: plan.sources,
+        destination,
+      };
+    });
+
     isAutoCopyLoading = true;
     $("#auto-copy-confirm-button").prop("disabled", true);
     $("#auto-copy-cancel-button").prop("disabled", true);
@@ -259,9 +373,9 @@ if (autoCopyModal) {
     $("#auto-copy-spinner").show();
     $("#auto-copy-output-content").text("Starting copy process...\n");
 
-    for (let i = 0; i < currentAutoCopyPlans.length; i++) {
-      const plan = currentAutoCopyPlans[i];
-      const stepMsg = `[${i + 1}/${currentAutoCopyPlans.length}] Copying to ${plan.destination}...\n`;
+    for (let i = 0; i < finalPlans.length; i++) {
+      const plan = finalPlans[i];
+      const stepMsg = `[${i + 1}/${finalPlans.length}] Copying to ${plan.destination}...\n`;
       $("#auto-copy-output-content").append(stepMsg);
 
       try {
@@ -305,8 +419,8 @@ if (autoCopyModal) {
     $("#auto-copy-spinner").hide();
     $("#auto-copy-output-content").append("Done! All items copied successfully.");
 
-    if (currentAutoCopyPlans.length > 0 && currentAutoCopyPlans[0].destination) {
-      const destination = currentAutoCopyPlans[0].destination;
+    if (finalPlans.length > 0 && finalPlans[0].destination) {
+      const destination = finalPlans[0].destination;
       let destPath = destination;
       if (destPath.startsWith(constant.BASE_PATH)) {
         destPath = destPath.slice(constant.BASE_PATH.length);

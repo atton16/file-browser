@@ -94,6 +94,7 @@ describe("planCopy with real default base directories", () => {
       {
         sources: [fullPath],
         destination: MOVIE_DIR,
+        type: "movie",
       },
     ]);
   });
@@ -109,6 +110,11 @@ describe("planCopy with real default base directories", () => {
       {
         sources: [fullPath],
         destination: `${TVSHOW_DIR}/Rick and Morty/Season 9`,
+        type: "tvshow",
+        title: "Rick and Morty",
+        season: "Season 9",
+        tvshowBaseDir: TVSHOW_DIR,
+        isShowDir: false,
       },
     ]);
   });
@@ -124,6 +130,11 @@ describe("planCopy with real default base directories", () => {
       {
         sources: [input],
         destination: `${TVSHOW_DIR}/Widows Bay/Season 1`,
+        type: "tvshow",
+        title: "Widows Bay",
+        season: "Season 1",
+        tvshowBaseDir: TVSHOW_DIR,
+        isShowDir: false,
       },
     ]);
   });
@@ -191,5 +202,25 @@ describe("planCopy with real default base directories", () => {
     );
     expect(shrinkingCall).toBeDefined();
     expect(shrinkingCall?.sources).toEqual([tv3]);
+  });
+
+  test("includes detailed metadata fields (type, title, season, tvshowBaseDir) for UI customization", async () => {
+    const tvPath = `${PREFIX}Rick.and.Morty.S09E10.mkv`;
+    const moviePath = `${PREFIX}Project.Hail.Mary.2026.mkv`;
+
+    const calls = await planCopy([tvPath, moviePath], {
+      movieDir: MOVIE_DIR,
+      tvshowDir: TVSHOW_DIR,
+    });
+
+    const tvCall = calls.find((c) => c.type === "tvshow");
+    expect(tvCall).toBeDefined();
+    expect(tvCall?.title).toBe("Rick and Morty");
+    expect(tvCall?.season).toBe("Season 9");
+    expect(tvCall?.tvshowBaseDir).toBe(TVSHOW_DIR);
+
+    const movieCall = calls.find((c) => c.type === "movie");
+    expect(movieCall).toBeDefined();
+    expect(movieCall?.type).toBe("movie");
   });
 });
