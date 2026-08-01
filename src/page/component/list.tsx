@@ -252,7 +252,7 @@ export const List = async ({
                   >
                     <span class="visually-hidden">Loading...</span>
                   </div>
-                  <pre id="output-content"></pre>
+                  <pre id="output-content" class="bg-dark text-light p-3 border border-secondary rounded text-break font-monospace"></pre>
                 </div>
               </div>
               <div class="modal-footer">
@@ -308,7 +308,7 @@ export const List = async ({
                 <div class="mb-3" id="auto-copy-output" style="display: none;">
                   <h6>Status</h6>
                   <div class="spinner-border text-primary me-2 mb-2" role="status" id="auto-copy-spinner" style="display: none;"></div>
-                  <pre id="auto-copy-output-content" class="bg-light p-2 border rounded text-break"></pre>
+                  <pre id="auto-copy-output-content" class="bg-dark text-light p-3 border border-secondary rounded text-break font-monospace"></pre>
                 </div>
               </div>
               <div class="modal-footer">
