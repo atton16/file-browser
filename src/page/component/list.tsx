@@ -131,6 +131,14 @@ export const List = async ({
         </button>
         <button
           type="button"
+          class="btn btn-outline-light"
+          id="edit-selected"
+          disabled
+        >
+          ✏️ EDIT
+        </button>
+        <button
+          type="button"
           class="btn btn-outline-danger"
           id="delete-selected"
           data-bs-toggle="modal"
@@ -615,10 +623,20 @@ export const List = async ({
               </th>
               {file.isDirectory ? (
                 <td>
-                  <a href={file.href}>{file.name}</a>
+                  <a href={file.href} class="text-decoration-none">
+                    📁 {file.name}
+                  </a>
                 </td>
               ) : (
-                <td>{file.name}</td>
+                <td>
+                  <a
+                    href={normalizePath(`/edit/${cwd}/${file.name}`)}
+                    class="text-decoration-none"
+                    title="Edit in Monaco Editor"
+                  >
+                    📄 {file.name}
+                  </a>
+                </td>
               )}
               <td>
                 {file.username ? file.username : file.uid}:

@@ -13,6 +13,8 @@ import { deleteApi } from "./api/delete";
 import { chmodApi } from "./api/chmod";
 import { chownApi } from "./api/chown";
 import { page } from "./page";
+import { editPage } from "./edit";
+import { fileApi } from "./api/file";
 import { randomUUIDv7 } from "bun";
 
 declare module "hono" {
@@ -76,7 +78,9 @@ app.route("/api/rename", renameApi);
 app.route("/api/delete", deleteApi);
 app.route("/api/chmod", chmodApi);
 app.route("/api/chown", chownApi);
+app.route("/api/file", fileApi);
 app.route("/page", page);
+app.route("/edit", editPage);
 app.use("/public/*", serveStatic({ root: `${process.cwd()}/src` }));
 
 console.log("BASE_PATH", BASE_PATH);

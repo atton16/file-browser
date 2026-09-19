@@ -42,8 +42,25 @@ function controlActionButtons() {
   const chownSel = document.getElementById("chown-selected");
   if (chownSel) chownSel.disabled = count === 0;
 
+  const editSel = document.getElementById("edit-selected");
+  if (editSel) {
+    const isSingleNonDir = count === 1 && selected[0].dataset.isDirectory === "false";
+    editSel.disabled = !isSingleNonDir;
+  }
+
   const deleteSel = document.getElementById("delete-selected");
   if (deleteSel) deleteSel.disabled = count === 0;
+}
+
+const editBtn = document.getElementById("edit-selected");
+if (editBtn) {
+  editBtn.addEventListener("click", function () {
+    const selected = getSelectedCheckboxes();
+    if (selected.length === 1 && selected[0].dataset.isDirectory === "false") {
+      const absPath = selected[0].value;
+      window.location.href = `/edit/${cleanPath(absPath)}`;
+    }
+  });
 }
 
 // Check all / Uncheck all
